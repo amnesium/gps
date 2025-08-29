@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New GPU Priority Request</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { background-color: #007bff; color: white; padding: 20px; margin: -30px -30px 20px -30px; border-radius: 8px 8px 0 0; text-align: center; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; font-size: 12px; color: #6c757d; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        td { padding: 8px; vertical-align: top; }
+        .label { font-weight: bold; width: 30%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>🖥️ New GPU Priority Request</h2>
+        </div>
+
+        <p>A new GPU priority request has been submitted and requires your attention.</p>
+
+        <h3>📋 Priority Details</h3>
+        <table>
+            <tr><td class="label">Bugzilla Ticket:</td><td>{{ priority.bugzilla_ticket }}</td></tr>
+            <tr><td class="label">Submitted by:</td><td>{{ priority.user.username }} ({{ priority.user.email }})</td></tr>
+            <tr><td class="label">GPU Type:</td><td>{{ priority.gpu_type }}</td></tr>
+            <tr><td class="label">GPU Count:</td><td>{{ priority.gpu_count }}</td></tr>
+            <tr><td class="label">Duration:</td><td>{{ priority.duration_display }}</td></tr>
+            <tr><td class="label">Slurm Project:</td><td>{{ priority.slurm_project }}</td></tr>
+            <tr><td class="label">Status:</td><td>{{ priority.status.title() }}</td></tr>
+            <tr><td class="label">Submitted:</td><td>{{ priority.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td></tr>
+        </table>
+
+        {% if priority.additional_usernames_list %}
+        <p><strong>Additional Users:</strong><br>
+        {{ priority.additional_usernames_list | join(', ') }}</p>
+        {% endif %}
+
+        <p><strong>Reason:</strong><br>
+        {{ priority.reason }}</p>
+
+        <div class="footer">
+            <p>This is an automated notification from the GPU Priority Service.</p>
+            <p>Priority ID: {{ priority.id }} | © 2025 Idiap Research Institute</p>
+        </div>
+    </div>
+</body>
+</html>

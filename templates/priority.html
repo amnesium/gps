@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}New Priority - GPU Priority Service{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="fas fa-calendar-plus me-2"></i>GPU Priority Request</h3>
+            </div>
+            <div class="card-body">
+                <form id="priorityForm" method="POST" action="{{ url_for('submit_priority') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="bugzilla_ticket" class="form-label">
+                                <i class="fas fa-ticket-alt me-1"></i>Bugzilla Ticket Number *
+                            </label>
+                            <input type="text" class="form-control" id="bugzilla_ticket" name="bugzilla_ticket" required 
+                                   value="{{ form_data.get('bugzilla_ticket', '') }}" placeholder="e.g., BUG-12345 or 12345">
+                            <div class="form-text">Enter the related Bugzilla ticket number</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">
+                                <i class="fas fa-user me-1"></i>Your Username *
+                            </label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   value="{{ form_data.get('username', g.user.username) }}" required readonly>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="additional_usernames" class="form-label">
+                            <i class="fas fa-users me-1"></i>Additional Usernames
+                        </label>
+                        <textarea class="form-control" id="additional_usernames" name="additional_usernames" 
+                                  rows="2" placeholder="username1&#10;username2">{{ form_data.get('additional_usernames', '') }}</textarea>
+                        <div class="form-text">Enter additional usernames, one per line (optional)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="slurm_project" class="form-label">
+                            <i class="fas fa-server me-1"></i>Slurm Project *
+                        </label>
+                        <input type="text" class="form-control" id="slurm_project" name="slurm_project" required
+                               value="{{ form_data.get('slurm_project', '') }}" placeholder="your-slurm-project">
+                        <div class="form-text">Enter your Slurm project name</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="gpu_type" class="form-label">
+                                <i class="fas fa-microchip me-1"></i>GPU Type *
+                            </label>
+                            <select class="form-select" id="gpu_type" name="gpu_type" required>
+                                <option value="">Select GPU Type</option>
+                                {% for gpu_type in gpu_types %}
+                                    <option value="{{ gpu_type }}" {% if form_data.get('gpu_type') == gpu_type %}selected{% endif %}>{{ gpu_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <label for="gpu_count" class="form-label me-2 mb-0">
+                                    <i class="fas fa-hashtag me-1"></i>Number of GPUs *
+                                </label>
+                                <button type="button" class="btn btn-outline-info btn-sm policy-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="<strong>GPU Priority Policy</strong><br><br>In exceptional circumstances users may be granted access to a special QoS which will allow them to have priority access to a limited amount of resources.<br><br>All requests need to be justified by the PI of the project and are for a maximum of two weeks.<br><br>Requests will be grouped by event/conference and for all such policies not more than 50% of the available resources should be allocated.">
+                                    <i class="fas fa-info-circle"></i> Policy
+                                </button>
+                            </div>
+                            <input type="number" class="form-control" id="gpu_count" name="gpu_count" 
+                                   min="1" required value="{{ form_data.get('gpu_count', '') }}" placeholder="1">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="duration_days" class="form-label">
+                            <i class="fas fa-clock me-1"></i>Duration (Days) *
+                        </label>
+                        <input type="number" class="form-control" id="duration_days" name="duration_days" 
+                               min="1" max="14" required value="{{ form_data.get('duration_days', '') }}" placeholder="7">
+                        <div class="form-text">Enter duration in days (1-14, maximum 2 weeks)</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="reason" class="form-label">
+                            <i class="fas fa-comment-alt me-1"></i>Reason for Priority *
+                        </label>
+                        <textarea class="form-control" id="reason" name="reason" rows="4" required 
+                                  placeholder="Provide a simple explanation for your GPU priority request for the admin to determine the priority name">{{ form_data.get('reason', '') }}</textarea>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Priority Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - GPU Priority Service{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-cog me-2"></i>Admin Panel</h2>
+    <div>
+        <span class="badge bg-info me-2">Total: <span id="totalCount">{{ priorities|length }}</span></span>
+        {% if show_archived %}
+            <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-eye-slash me-1"></i>Hide Archived
+            </a>
+        {% else %}
+            <a href="{{ url_for('admin_panel', show_archived='true') }}" class="btn btn-outline-info">
+                <i class="fas fa-archive me-1"></i>Show Archived
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mb-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" class="form-control" id="searchInput" placeholder="Search priorities by ticket, user, GPU type, reason, status, priority name...">
+                <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if priorities %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="prioritiesTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="id">
+                                ID <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-column="bugzilla_ticket">
+                                Ticket <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-column="username">
+                                User <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-column="gpu_type">
+                                GPU <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-column="duration_display">
+                                Duration <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-column="status">
+                                Status <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-column="priority_name">
+                                Priority Name <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-column="created_at">
+                                Date <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prioritiesTableBody">
+                        {% for priority in priorities %}
+                        <tr class="priority-row" 
+                            data-search="{{ (priority.bugzilla_ticket + ' ' + priority.user.username + ' ' + priority.user.email + ' ' + priority.slurm_project + ' ' + priority.gpu_type + ' ' + priority.reason + ' ' + priority.status + ' ' + (priority.admin_message or '') + ' ' + (priority.additional_usernames or '') + ' ' + (priority.priority_name or ''))|lower }}"
+                            {% if priority.is_archived %}data-archived="true"{% endif %}>
+                            <td>{{ priority.id }}</td>
+                            <td>
+                                {{ priority.bugzilla_ticket }}
+                                {% if priority.is_archived %}
+                                    <span class="badge bg-secondary badge-sm">Archived</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ priority.user.username }}<br>
+                                <small class="text-muted">{{ priority.user.email }}</small>
+                            </td>
+                            <td>
+                                {{ priority.gpu_count }}x {{ priority.gpu_type }}
+                            </td>
+                            <td>{{ priority.duration_display }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if priority.status == 'accepted' else ('danger' if priority.status == 'refused' else 'warning') }}">
+                                    {{ priority.status.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if priority.priority_name %}
+                                    <span class="badge bg-info">{{ priority.priority_name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Not set</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ priority.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <div class="btn-group-spaced d-flex flex-wrap" role="group">
+                                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#modal{{ priority.id }}" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" type="button" data-bs-toggle="modal" data-bs-target="#statusModal{{ priority.id }}" title="Update Status">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="modal" data-bs-target="#usersModal{{ priority.id }}" title="Manage Users">
+                                        <i class="fas fa-users"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#messageModal{{ priority.id }}" title="Add Message">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" type="button" onclick="confirmDelete({{ priority.id }}, '{{ priority.bugzilla_ticket }}')" title="Delete Priority">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Form -->
+    <form id="deleteForm" method="POST" action="{{ url_for('delete_priority') }}" style="display: none;">
+        <input type="hidden" id="deletePriorityId" name="priority_id" value="">
+    </form>
+
+    <!-- Modals for priority details -->
+    {% for priority in priorities %}
+    <div class="modal fade" id="modal{{ priority.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Priority {{ priority.id }} - {{ priority.bugzilla_ticket }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Priority Details</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>User:</strong></td><td>{{ priority.user.username }} ({{ priority.user.email }})</td></tr>
+                                <tr><td><strong>Ticket:</strong></td><td>{{ priority.bugzilla_ticket }}</td></tr>
+                                <tr><td><strong>GPU:</strong></td><td>{{ priority.gpu_count }}x {{ priority.gpu_type }}</td></tr>
+                                <tr><td><strong>Duration:</strong></td><td>{{ priority.duration_display }}</td></tr>
+                                <tr><td><strong>Slurm Project:</strong></td><td>{{ priority.slurm_project }}</td></tr>
+                                <tr><td><strong>Status:</strong></td><td>{{ priority.status.title() }}</td></tr>
+                                <tr><td><strong>Priority Name:</strong></td><td>{{ priority.priority_name or 'Not set' }}</td></tr>
+                                <tr><td><strong>Submitted:</strong></td><td>{{ priority.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td></tr>
+                                {% if priority.status_updated_at %}
+                                <tr><td><strong>Status Updated:</strong></td><td>{{ priority.status_updated_at.strftime('%Y-%m-%d %H:%M:%S') }} by {{ priority.status_updated_by }}</td></tr>
+                                {% endif %}
+                                {% if priority.valid_until %}
+                                <tr><td><strong>Valid Until:</strong></td><td>{{ priority.valid_until.strftime('%Y-%m-%d %H:%M:%S') }}</td></tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            {% if priority.additional_usernames_list %}
+                            <h6>Additional Users</h6>
+                            <ul>
+                                {% for username in priority.additional_usernames_list %}
+                                    <li>{{ username }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+
+                            {% if priority.admin_message %}
+                            <h6>Messages</h6>
+                            <div class="alert alert-info" style="white-space: pre-line;">{{ priority.admin_message }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>Reason</h6>
+                        <div class="bg-light p-3 rounded">{{ priority.reason }}</div>
+                    </div>
+
+                    {% if priority.slurm_command %}
+                    <div class="mt-3">
+                        <h6>SLURM Commands</h6>
+                        <pre class="bg-dark text-light p-3 rounded small" id="slurmCommand{{ priority.id }}">{{ priority.slurm_command }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Update Modal -->
+    <div class="modal fade" id="statusModal{{ priority.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Priority Status - {{ priority.bugzilla_ticket }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('update_priority_status') }}">
+                    <div class="modal-body">
+                        <input type="hidden" name="priority_id" value="{{ priority.id }}">
+
+                        <div class="mb-3">
+                            <label for="status{{ priority.id }}" class="form-label">Status</label>
+                            <select class="form-select" id="status{{ priority.id }}" name="status" required onchange="togglePriorityName{{ priority.id }}(this.value)">
+                                <option value="pending" {% if priority.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="accepted" {% if priority.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                                <option value="refused" {% if priority.status == 'refused' %}selected{% endif %}>Refused</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="priorityNameDiv{{ priority.id }}" {% if priority.status != 'accepted' %}style="display: none;"{% endif %}>
+                            <label for="priority_name{{ priority.id }}" class="form-label">Priority Name *</label>
+                            <input type="text" class="form-control" id="priority_name{{ priority.id }}" name="priority_name" 
+                                   value="{{ priority.priority_name or '' }}" placeholder="e.g., high-compute-ml, urgent-research">
+                            <div class="form-text">Required when accepting. Use letters, numbers, underscores, and hyphens only.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="admin_message{{ priority.id }}" class="form-label">Message (optional)</label>
+                            <textarea class="form-control" id="admin_message{{ priority.id }}" name="admin_message" rows="3" placeholder="Add a message for the user..."></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-info-circle me-1"></i>The user will receive an email notification about this status change.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Status</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Management Modal -->
+    <div class="modal fade" id="usersModal{{ priority.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Manage Users - {{ priority.bugzilla_ticket }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('update_priority_users') }}">
+                    <div class="modal-body">
+                        <input type="hidden" name="priority_id" value="{{ priority.id }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Primary User</label>
+                            <input type="text" class="form-control" value="{{ priority.user.username }}" readonly>
+                            <div class="form-text">Primary user cannot be changed</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="additional_usernames{{ priority.id }}" class="form-label">Additional Usernames</label>
+                            <textarea class="form-control" id="additional_usernames{{ priority.id }}" name="additional_usernames" rows="3" placeholder="username1&#10;username2&#10;username3">{{ priority.additional_usernames or '' }}</textarea>
+                            <div class="form-text">Enter additional usernames, one per line</div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <small><i class="fas fa-exclamation-triangle me-1"></i>Changing users will regenerate SLURM commands if priority is accepted.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Users</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Message Modal -->
+    <div class="modal fade" id="messageModal{{ priority.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-envelope me-2"></i>Add Message - {{ priority.bugzilla_ticket }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('add_message') }}">
+                    <div class="modal-body">
+                        <input type="hidden" name="priority_id" value="{{ priority.id }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">For User</label>
+                            <input type="text" class="form-control" value="{{ priority.user.username }} ({{ priority.user.email }})" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="message{{ priority.id }}" class="form-label">Message *</label>
+                            <textarea class="form-control" id="message{{ priority.id }}" name="message" rows="4" required 
+                                      placeholder="Type your message for the user..."></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-info-circle me-1"></i>This message will be added to the priority and visible in the user's priority list.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-envelope me-1"></i>Add Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function togglePriorityName{{ priority.id }}(status) {
+        const div = document.getElementById('priorityNameDiv{{ priority.id }}');
+        const input = document.getElementById('priority_name{{ priority.id }}');
+        if (status === 'accepted') {
+            div.style.display = 'block';
+            input.required = true;
+        } else {
+            div.style.display = 'none';
+            input.required = false;
+        }
+    }
+    </script>
+    {% endfor %}
+
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+        <h4>No Priorities{% if show_archived %} (Including Archived){% endif %}</h4>
+        <p class="text-muted">No priorities have been submitted yet{% if not show_archived %}, or they are all archived{% endif %}.</p>
+    </div>
+{% endif %}
+
+<script>
+// Global variables for search and sort
+let currentSort = { column: null, direction: 'asc' };
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupSearch();
+    setupSort();
+});
+
+function setupSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const clearButton = document.getElementById('clearSearch');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', performSearch);
+        clearButton.addEventListener('click', clearSearch);
+    }
+}
+
+function setupSort() {
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const column = header.getAttribute('data-column');
+            sortTable(column);
+        });
+        header.style.cursor = 'pointer';
+    });
+}
+
+function performSearch() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#prioritiesTableBody tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const searchText = row.getAttribute('data-search');
+        if (searchText.includes(searchTerm)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    document.getElementById('totalCount').textContent = visibleCount;
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    performSearch();
+}
+
+function sortTable(column) {
+    const tbody = document.getElementById('prioritiesTableBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    // Determine sort direction
+    if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+    }
+
+    // Update sort icons
+    document.querySelectorAll('.sort-icon').forEach(icon => {
+        icon.className = 'fas fa-sort sort-icon';
+    });
+
+    const currentHeader = document.querySelector(`[data-column="${column}"] .sort-icon`);
+    currentHeader.className = `fas fa-sort-${currentSort.direction === 'asc' ? 'up' : 'down'} sort-icon`;
+
+    // Sort rows
+    rows.sort((a, b) => {
+        let aValue = getCellValue(a, column);
+        let bValue = getCellValue(b, column);
+
+        // Handle different data types
+        if (column === 'id' || column === 'gpu_count') {
+            aValue = parseInt(aValue) || 0;
+            bValue = parseInt(bValue) || 0;
+        } else if (column === 'created_at') {
+            aValue = new Date(aValue);
+            bValue = new Date(bValue);
+        }
+
+        if (aValue < bValue) return currentSort.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return currentSort.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    // Reattach sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function getCellValue(row, column) {
+    const cells = row.querySelectorAll('td');
+    const columnIndex = {
+        'id': 0,
+        'bugzilla_ticket': 1,
+        'username': 2,
+        'gpu_type': 3,
+        'duration_display': 4,
+        'status': 5,
+        'priority_name': 6,
+        'created_at': 7
+    };
+
+    const cell = cells[columnIndex[column]];
+    if (column === 'username') {
+        return cell.textContent.split('\n')[0].trim(); // Get username only, not email
+    }
+    return cell ? cell.textContent.trim() : '';
+}
+
+function confirmDelete(priorityId, ticketNumber) {
+    if (confirm(`Are you sure you want to delete priority "${ticketNumber}" (ID: ${priorityId})?\n\nThis action cannot be undone.`)) {
+        document.getElementById('deletePriorityId').value = priorityId;
+        document.getElementById('deleteForm').submit();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,390 @@
+/* Custom styles for GPU Priority Service - Idiap Research Institute */
+
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --idiap-blue: #0066cc;
+    --idiap-light-blue: #e6f2ff;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.card {
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.jumbotron {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--idiap-blue) 100%);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn {
+    transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background-color: var(--idiap-blue);
+    border-color: var(--idiap-blue);
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.table th {
+    border-top: none;
+    background-color: var(--light-color);
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.075);
+}
+
+.badge {
+    font-size: 0.85em;
+}
+
+.navbar-text {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.alert {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.alert-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.card-header {
+    background-color: var(--light-color);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    font-weight: 600;
+}
+
+.modal-header {
+    background-color: var(--primary-color);
+    color: white;
+    border-bottom: none;
+}
+
+.modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+footer {
+    margin-top: auto;
+    background-color: var(--idiap-light-blue) !important;
+    /* Removed border-top blue line */
+}
+
+footer img {
+    transition: transform 0.2s ease;
+}
+
+footer img:hover {
+    transform: scale(1.1);
+}
+
+.form-label {
+    font-weight: 500;
+    color: var(--dark-color);
+}
+
+.form-text {
+    font-size: 0.875rem;
+}
+
+textarea.form-control {
+    resize: vertical;
+}
+
+.sortable {
+    user-select: none;
+    cursor: pointer;
+}
+
+.sortable:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sort-icon {
+    opacity: 0.5;
+    font-size: 0.8em;
+    margin-left: 0.5rem;
+}
+
+.sortable:hover .sort-icon {
+    opacity: 1;
+}
+
+.fa-sort-up, .fa-sort-down {
+    opacity: 1 !important;
+    color: var(--primary-color);
+}
+
+.priority-row[data-archived="true"] {
+    opacity: 0.7;
+    background-color: rgba(108, 117, 125, 0.1);
+}
+
+.badge-sm {
+    font-size: 0.7em;
+}
+
+.btn-group-spaced .btn {
+    padding: 0.25rem 0.4rem;
+    margin-right: 0.25rem; /* Added space between buttons */
+}
+
+.btn-group-spaced .btn:last-child {
+    margin-right: 0;
+}
+
+.input-group .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.bg-idiap {
+    background-color: var(--idiap-blue) !important;
+}
+
+.text-idiap {
+    color: var(--idiap-blue) !important;
+}
+
+.border-idiap {
+    border-color: var(--idiap-blue) !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.priority-name {
+    background: linear-gradient(45deg, var(--info-color), var(--idiap-blue));
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    font-family: 'Courier New', monospace;
+}
+
+.accordion-button {
+    font-weight: 500;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: var(--idiap-light-blue);
+    color: var(--idiap-blue);
+}
+
+.accordion-button:focus {
+    border-color: var(--idiap-blue);
+    box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+}
+
+/* Policy button styling */
+.policy-btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    white-space: nowrap;
+}
+
+.policy-btn:hover {
+    background-color: var(--info-color);
+    border-color: var(--info-color);
+    color: white;
+}
+
+/* Enhanced tooltip styling - Make policy tooltip wider to match form field width */
+.tooltip {
+    font-size: 0.875rem;
+}
+
+.tooltip-inner {
+    max-width: 400px; /* Increased width to match form field */
+    min-width: 300px; /* Ensure minimum width */
+    padding: 0.75rem;
+    text-align: left;
+    line-height: 1.4;
+    background-color: rgba(0, 0, 0, 0.9);
+}
+
+/* Specific wider tooltip for policy button */
+.policy-btn + .tooltip .tooltip-inner {
+    max-width: 450px; /* Extra wide for policy content */
+    min-width: 350px; /* Consistent with input field width */
+}
+
+.tooltip.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: rgba(0, 0, 0, 0.9);
+}
+
+.tooltip.bs-tooltip-start .tooltip-arrow::before {
+    border-left-color: rgba(0, 0, 0, 0.9);
+}
+
+.tooltip.bs-tooltip-end .tooltip-arrow::before {
+    border-right-color: rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 768px) {
+    .jumbotron {
+        padding: 2rem 1rem;
+    }
+
+    .jumbotron .display-4 {
+        font-size: 2rem;
+    }
+
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+
+    .btn-group-spaced .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.25rem;
+        margin-right: 0;
+    }
+
+    .navbar-brand span {
+        font-size: 0.9rem;
+    }
+
+    .accordion-button .w-100 {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+
+    .accordion-button .me-4 {
+        margin-bottom: 0.25rem !important;
+        margin-right: 0 !important;
+    }
+
+    .policy-btn {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .tooltip-inner {
+        max-width: 280px;
+        min-width: 250px;
+        font-size: 0.8rem;
+    }
+
+    .policy-btn + .tooltip .tooltip-inner {
+        max-width: 300px;
+        min-width: 280px;
+    }
+}
+
+.form-check-input:checked {
+    background-color: var(--idiap-blue);
+    border-color: var(--idiap-blue);
+}
+
+.modal-content {
+    border: none;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+@media print {
+    .navbar, .btn, .modal, footer, .input-group {
+        display: none !important;
+    }
+
+    .card {
+        border: 1px solid #000;
+        box-shadow: none;
+    }
+
+    .table {
+        font-size: 0.8rem;
+    }
+
+    .jumbotron {
+        background: white !important;
+        color: black !important;
+    }
+}
+
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid var(--idiap-blue);
+    outline-offset: 2px;
+}
+
+@media (prefers-contrast: high) {
+    .card {
+        border: 2px solid var(--dark-color);
+    }
+
+    .badge {
+        border: 1px solid var(--dark-color);
+    }
+
+    .priority-name {
+        background: var(--dark-color) !important;
+        border: 1px solid var(--light-color);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card,
+    .btn {
+        animation: none;
+        transition: none;
+    }
+
+    footer img:hover {
+        transform: none;
+    }
+}

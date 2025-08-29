@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Priority - GPU Priority Service{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Your Priority</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <strong>Please review your priority details carefully before confirming.</strong>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-info-circle me-2"></i>Priority Details</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Bugzilla Ticket:</strong></td>
+                                <td>{{ data.bugzilla_ticket }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Username:</strong></td>
+                                <td>{{ data.username }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>GPU Type:</strong></td>
+                                <td>{{ data.gpu_type }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>GPU Count:</strong></td>
+                                <td>{{ data.gpu_count }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Duration:</strong></td>
+                                <td>{{ data.duration_days }} day{{ 's' if data.duration_days > 1 else '' }}
+                                    {% if data.duration_days > 14 %}
+                                        <span class="badge bg-danger">Exceeds 2-week limit</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Slurm Project:</strong></td>
+                                <td>{{ data.slurm_project }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-users me-2"></i>Additional Users</h5>
+                        {% if data.additional_usernames %}
+                            <ul class="list-unstyled">
+                                {% for username in data.additional_usernames.split('
+') %}
+                                    {% if username.strip() %}
+                                        <li><i class="fas fa-user me-1"></i>{{ username.strip() }}</li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">None</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <h5><i class="fas fa-comment-alt me-2"></i>Reason</h5>
+                    <div class="bg-light p-3 rounded">
+                        {{ data.reason }}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-3">
+                    <form method="POST" action="{{ url_for('confirm_priority') }}" class="flex-fill">
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-check me-2"></i>Confirm and Submit
+                        </button>
+                    </form>
+                    <a href="{{ url_for('edit_priority') }}" class="btn btn-secondary btn-lg flex-fill">
+                        <i class="fas fa-edit me-2"></i>Edit Priority
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
