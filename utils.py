@@ -24,7 +24,7 @@ def get_or_create_user(user_info):
             username = user_info.get('preferred_username')
             if not username:
                 email = user_info.get('email', '')
-                username = email.split('@')[0] if '@' in email else 'user'
+                username = email.split('@') if '@' in email else 'user'
 
             user = User(
                 oidc_sub=oidc_sub,
@@ -101,8 +101,9 @@ def generate_slurm_command(priority):
             logger.warning(f'Cannot generate SLURM command: missing priority or priority_name')
             return None
 
-        # Use the admin-set priority name directly
-        qos_name = priority.priority_name
+        # Format QOS name according to: prio-<qos_name>-<duration>d
+        base_qos_name = priority.priority_name
+        qos_name = f"prio-{base_qos_name}-{priority.duration_days}d"
 
         # Get all users (primary + additional)
         all_users = [priority.user.username]
@@ -114,7 +115,8 @@ def generate_slurm_command(priority):
         # Add comment header
         commands.append(f"# GPU Priority Commands for Ticket: {priority.bugzilla_ticket}")
         commands.append(f"# Generated on: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
-        commands.append(f"# Priority Name: {qos_name}")
+        commands.append(f"# Base Priority Name: {base_qos_name}")
+        commands.append(f"# QOS Name: {qos_name}")
         commands.append(f"# Users: {', '.join(all_users)}")
         commands.append("")
 
@@ -143,13 +145,13 @@ def generate_slurm_command(priority):
         # Calculate cleanup date from when priority was accepted
         if priority.status_updated_at:
             cleanup_date = priority.status_updated_at + timedelta(days=priority.duration_days)
-            cleanup_date_str = cleanup_date.strftime('%m%d%H%M%Y')
 
             commands.append("")
             commands.append("# Schedule QOS cleanup")
+            # Fixed at command - use proper syntax with -t flag for timestamp format
             cleanup_cmd = (
                 f"echo 'sacctmgr -i delete qos {qos_name}' | "
-                f"at {cleanup_date_str}"
+                f"at -t {cleanup_date.strftime('%Y%m%d%H%M')}"
             )
             commands.append(cleanup_cmd)
 
@@ -197,7 +199,7 @@ def validate_username(username):
         if not usernames:
             return False
 
-        username_pattern = r'^[a-zA-Z][a-zA-Z0-9._-]*$'
+        username_pattern = r'^[a-zA-Z][a-zA-Z0-9\.\-]*$'
 
         for user in usernames:
             if not re.match(username_pattern, user):
@@ -227,7 +229,7 @@ def validate_priority_name(priority_name):
                 len(priority_name) >= 2 and 
                 len(priority_name) <= 50 and
                 not priority_name.startswith('-') and  # Cannot start with dash
-                not priority_name.endswith('-'))       # Cannot end with dash
+                not priority_name.endswith('-'))  # Cannot end with dash
     except Exception as e:
         logger.error(f'Error validating priority name {priority_name}: {str(e)}')
         return False

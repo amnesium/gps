@@ -41,7 +41,7 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y python3 python3-pip python3-venv postgresql postgresql-contrib nginx supervisor git curl at
 
 # Install additional dependencies
-sudo apt install -y libpq-dev python3-dev build-essential
+sudo apt install -y libpq-dev python3-dev build-essential bc
 
 # Install certbot/acme-dns dependencies
 sudo apt install -y python3-requests libaugeas0 python3-certbot
@@ -142,6 +142,10 @@ with app.app_context():
 # Add an admin user
 source venv/bin/activate
 python manage_admin.py add lillo christophe.lillo@idiap.ch
+python manage_admin.py add baco guy.baconniere@idiap.ch
+python manage_admin.py add lmplumel louis-marie.plumel@idiap.ch
+python manage_admin.py add formaz frank.formaz@idiap.ch
+python manage_admin.py add ltomas laurent.tomas@idiap.ch
 
 # List admin users
 python manage_admin.py list
