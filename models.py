@@ -72,7 +72,7 @@ class Priority(db.Model):
     )
 
     def __repr__(self):
-        return f'<Priority {self.id} - {self.bugzilla_ticket}>'
+        return f'<Priority {self.id}: {self.bugzilla_ticket}>'
 
     @property
     def additional_usernames_list(self):

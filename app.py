@@ -4,7 +4,7 @@ from authlib.integrations.flask_client import OAuth
 from flask_mail import Mail, Message
 from config import Config
 from models import db, User, Priority, AdminUser
-from utils import get_or_create_user, generate_slurm_command, validate_bugzilla_ticket, validate_username, is_admin_user, validate_priority_name
+from utils import get_or_create_user, generate_slurm_command, validate_bugzilla_ticket, validate_username, is_admin_user, validate_priority_name, get_available_gpus
 import logging
 from datetime import datetime, timedelta
 import pytz
@@ -162,17 +162,36 @@ def create_app():
         flash('You have been logged out successfully.', 'info')
         return redirect(url_for('index'))
 
+    @app.route('/api/available-gpus')
+    @login_required  
+    def api_available_gpus():
+        """API endpoint to get available GPUs"""
+        try:
+            gpus = get_available_gpus()
+            return jsonify(gpus)
+        except Exception as e:
+            app.logger.error(f'Error getting available GPUs: {str(e)}')
+            return jsonify({'error': 'Unable to get GPU availability'}), 500
+
     @app.route('/priority')
     @login_required
     def priority_form():
-        gpu_types = ['rtx3090', 'v100', 'h100']
+        # Get available GPUs dynamically
+        try:
+            available_gpus = get_available_gpus()
+            gpu_types = list(available_gpus.keys())
+        except Exception as e:
+            app.logger.error(f'Error getting available GPUs: {str(e)}')
+            # Fallback to default GPU types
+            gpu_types = ['rtx3090', 'v100', 'h100']
+            available_gpus = {gpu: 0 for gpu in gpu_types}
 
         # Get form data from session if available (for form preservation)
         form_data = session.pop('form_data', {})
         if not form_data:
             form_data = {'username': g.user.username}
 
-        return render_template('priority.html', gpu_types=gpu_types, form_data=form_data)
+        return render_template('priority.html', gpu_types=gpu_types, available_gpus=available_gpus, form_data=form_data)
 
     @app.route('/submit_priority', methods=['POST'])
     @login_required
@@ -204,11 +223,23 @@ def create_app():
         if not data['slurm_project'] or not validate_username(data['slurm_project']):
             errors.append('Valid SLURM project is required')
 
-        if not data['gpu_type'] or data['gpu_type'] not in ['rtx3090', 'v100', 'h100']:
-            errors.append('Valid GPU type is required')
+        # Get available GPUs for validation
+        try:
+            available_gpus = get_available_gpus()
+            valid_gpu_types = list(available_gpus.keys())
+        except Exception as e:
+            app.logger.error(f'Error validating GPU availability: {str(e)}')
+            # Fallback validation
+            valid_gpu_types = ['rtx3090', 'v100', 'h100']
+            available_gpus = {gpu: float('inf') for gpu in valid_gpu_types}  # Allow any count as fallback
+
+        if not data['gpu_type'] or data['gpu_type'] not in valid_gpu_types:
+            errors.append(f'Valid GPU type is required. Available: {", ".join(valid_gpu_types)}')
 
         if not data['gpu_count'] or data['gpu_count'] < 1:
             errors.append('GPU count must be at least 1')
+        elif data['gpu_type'] in available_gpus and data['gpu_count'] > available_gpus[data['gpu_type']]:
+            errors.append(f'Requested GPU count ({data["gpu_count"]}) exceeds available {data["gpu_type"]} GPUs ({available_gpus[data["gpu_type"]]})')
 
         # Enforce maximum duration of 2 weeks (14 days)
         if not data['duration_days'] or data['duration_days'] < 1 or data['duration_days'] > 14:
@@ -348,7 +379,7 @@ def create_app():
         priorities = sorted(priorities, key=lambda x: x.created_at, reverse=True)
 
         return render_template('my_priorities.html', priorities=priorities, show_archived=show_archived, 
-                             utc_to_zurich=utc_to_zurich)
+                               utc_to_zurich=utc_to_zurich)
 
     @app.route('/admin')
     @admin_required
@@ -624,4 +655,4 @@ app = create_app()
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='0.0.0.0')
+        app.run(debug=True, host='0.0.0.0')

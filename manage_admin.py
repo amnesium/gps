@@ -2,9 +2,9 @@
 """
 Admin management script for GPU Priority Service
 Usage:
-  python manage_admin.py add <username> <email>
-  python manage_admin.py remove <username>
-  python manage_admin.py list
+    python manage_admin.py add <username> <email>
+    python manage_admin.py remove <username>
+    python manage_admin.py list
 """
 
 import sys

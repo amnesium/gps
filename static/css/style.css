@@ -105,7 +105,6 @@ body {
 footer {
     margin-top: auto;
     background-color: var(--idiap-light-blue) !important;
-    /* Removed border-top blue line */
 }
 
 footer img {
@@ -164,7 +163,7 @@ textarea.form-control {
 
 .btn-group-spaced .btn {
     padding: 0.25rem 0.4rem;
-    margin-right: 0.25rem; /* Added space between buttons */
+    margin-right: 0.25rem;
 }
 
 .btn-group-spaced .btn:last-child {
@@ -220,7 +219,6 @@ textarea.form-control {
     box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
 }
 
-/* Policy button styling */
 .policy-btn {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
@@ -234,24 +232,22 @@ textarea.form-control {
     color: white;
 }
 
-/* Enhanced tooltip styling - Make policy tooltip wider to match form field width */
 .tooltip {
     font-size: 0.875rem;
 }
 
 .tooltip-inner {
-    max-width: 400px; /* Increased width to match form field */
-    min-width: 300px; /* Ensure minimum width */
+    max-width: 400px;
+    min-width: 300px;
     padding: 0.75rem;
     text-align: left;
     line-height: 1.4;
     background-color: rgba(0, 0, 0, 0.9);
 }
 
-/* Specific wider tooltip for policy button */
 .policy-btn + .tooltip .tooltip-inner {
-    max-width: 450px; /* Extra wide for policy content */
-    min-width: 350px; /* Consistent with input field width */
+    max-width: 450px;
+    min-width: 350px;
 }
 
 .tooltip.bs-tooltip-top .tooltip-arrow::before {
@@ -268,6 +264,33 @@ textarea.form-control {
 
 .tooltip.bs-tooltip-end .tooltip-arrow::before {
     border-right-color: rgba(0, 0, 0, 0.9);
+}
+
+/* GPU Availability specific styles */
+#gpu-availability {
+    border: 1px solid var(--idiap-blue);
+    border-radius: 0.5rem;
+}
+
+#gpu-availability h6 {
+    color: var(--idiap-blue);
+    font-weight: 600;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+.progress-bar.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.progress-bar.bg-warning {
+    background-color: var(--warning-color) !important;
+}
+
+.progress-bar.bg-danger {
+    background-color: var(--danger-color) !important;
 }
 
 @media (max-width: 768px) {
@@ -318,73 +341,5 @@ textarea.form-control {
     .policy-btn + .tooltip .tooltip-inner {
         max-width: 300px;
         min-width: 280px;
-    }
-}
-
-.form-check-input:checked {
-    background-color: var(--idiap-blue);
-    border-color: var(--idiap-blue);
-}
-
-.modal-content {
-    border: none;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
-}
-
-.modal-body {
-    padding: 2rem;
-}
-
-@media print {
-    .navbar, .btn, .modal, footer, .input-group {
-        display: none !important;
-    }
-
-    .card {
-        border: 1px solid #000;
-        box-shadow: none;
-    }
-
-    .table {
-        font-size: 0.8rem;
-    }
-
-    .jumbotron {
-        background: white !important;
-        color: black !important;
-    }
-}
-
-.btn:focus,
-.form-control:focus,
-.form-select:focus {
-    outline: 2px solid var(--idiap-blue);
-    outline-offset: 2px;
-}
-
-@media (prefers-contrast: high) {
-    .card {
-        border: 2px solid var(--dark-color);
-    }
-
-    .badge {
-        border: 1px solid var(--dark-color);
-    }
-
-    .priority-name {
-        background: var(--dark-color) !important;
-        border: 1px solid var(--light-color);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .card,
-    .btn {
-        animation: none;
-        transition: none;
-    }
-
-    footer img:hover {
-        transform: none;
     }
 }

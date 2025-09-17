@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = button.closest('form');
         if (form) {
             form.addEventListener('submit', function() {
-                button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+                button.innerHTML = 'Processing...';
                 button.disabled = true;
             });
         }
@@ -138,10 +138,11 @@ function validateForm(e) {
     // Custom validations
     const bugzillaField = form.querySelector('#bugzilla_ticket');
     if (bugzillaField && bugzillaField.value) {
-        const bugzillaPattern = /^[A-Z]+-\d+$|^\d+$/;
+        // Updated validation for numbers only
+        const bugzillaPattern = /^\d+$/;
         if (!bugzillaPattern.test(bugzillaField.value.trim())) {
             bugzillaField.classList.add('is-invalid');
-            errors.push('Invalid Bugzilla ticket format. Use formats like BUG-12345 or 12345');
+            errors.push('Invalid Bugzilla ticket format. Use numbers only (e.g., 12345)');
             isValid = false;
         }
     }
@@ -176,7 +177,7 @@ function validateForm(e) {
 
     if (!isValid) {
         e.preventDefault();
-        showToast(errors.join('<br>'), 'error');
+        showToast(errors.join('  \n'), 'error');
 
         // Focus on first invalid field
         const firstInvalid = form.querySelector('.is-invalid');
@@ -224,14 +225,14 @@ function showToast(message, type = 'info') {
                      type === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle';
 
     const toastHtml = `
-        <div class="toast custom-toast align-items-center text-white bg-${type === 'error' ? 'danger' : type} border-0 position-fixed" 
-             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" id="${toastId}">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas ${iconClass} me-2"></i>
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        <div class="toast custom-toast" id="${toastId}" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 1050;">
+            <div class="toast-header">
+                <i class="fas ${iconClass} me-2"></i>
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
             </div>
         </div>
     `;

@@ -1,0 +1,50 @@
+<!-- admin_priority_detail.html -->
+<div class="row">
+  <div class="col-md-6">
+    <h6>Priority Details</h6>
+    <table class="table table-sm">
+      <tr><td><strong>User:</strong></td><td>{{ p.user.username }} ({{ p.user.email }})</td></tr>
+      <tr><td><strong>Ticket:</strong></td><td>{{ p.bugzilla_ticket }}</td></tr>
+      <tr><td><strong>GPU:</strong></td><td>{{ p.gpu_count }} × {{ p.gpu_type }}</td></tr>
+      <tr><td><strong>Duration:</strong></td><td>{{ p.duration_display }}</td></tr>
+      <tr><td><strong>Slurm Project:</strong></td><td>{{ p.slurm_project }}</td></tr>
+      <tr><td><strong>Status:</strong></td><td>{{ p.status.title() }}</td></tr>
+      {% if p.priority_name %}
+      <tr><td><strong>Priority Name:</strong></td>
+          <td>{{ p.priority_name }}</td></tr>
+      {% endif %}
+      {% if p.status_updated_at %}
+      <tr><td><strong>Updated At:</strong></td>
+          <td>{{ p.status_updated_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+      {% endif %}
+      {% if p.valid_until %}
+      <tr><td><strong>Valid Until:</strong></td>
+          <td>{{ p.valid_until.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+      {% endif %}
+      <tr><td><strong>Submitted:</strong></td>
+          <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+    </table>
+    {% if p.additional_usernames_list %}
+    <h6>Additional Users</h6>
+    <ul>
+      {% for u in p.additional_usernames_list %}
+        <li>{{ u }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <h6>Reason</h6>
+    <div class="bg-light p-3 rounded">{{ p.reason }}</div>
+    {% if p.admin_message %}
+    <h6 class="mt-3">Messages</h6>
+    <div class="bg-info bg-opacity-10 p-3 rounded">
+      <pre>{{ p.admin_message }}</pre>
+    </div>
+    {% endif %}
+    {% if p.slurm_command %}
+    <h6 class="mt-3">SLURM Commands</h6>
+    <pre>{{ p.slurm_command }}</pre>
+    {% endif %}
+  </div>
+</div>

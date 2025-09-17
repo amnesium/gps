@@ -24,7 +24,7 @@ def get_or_create_user(user_info):
             username = user_info.get('preferred_username')
             if not username:
                 email = user_info.get('email', '')
-                username = email.split('@') if '@' in email else 'user'
+                username = email.split('@')[0] if '@' in email else 'user'
 
             user = User(
                 oidc_sub=oidc_sub,
@@ -94,6 +94,54 @@ def is_admin_user(username):
         logger.error(f'Error checking admin status for {username}: {str(e)}')
         return False
 
+def get_available_gpus():
+    """Get available GPUs from the script"""
+    try:
+        # Execute the script
+        result = subprocess.run(
+            ['/usr/local/bin/remaining-gpus-for-prio.sh'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        if result.returncode != 0:
+            logger.error(f'Script failed with return code {result.returncode}: {result.stderr}')
+            # Return fallback values
+            return {'rtx3090': 0, 'v100': 0, 'h100': 0}
+
+        # Parse the output
+        gpus = {}
+        for line in result.stdout.strip().split('\n'):
+            if line.strip():
+                parts = line.split()
+                if len(parts) >= 2:
+                    gpu_type = parts[0].strip()
+                    try:
+                        count = int(parts[1].strip())
+                        gpus[gpu_type] = count
+                    except ValueError:
+                        logger.warning(f'Invalid GPU count in line: {line}')
+                        gpus[gpu_type] = 0
+
+        # If no GPUs found, return default structure
+        if not gpus:
+            logger.warning('No GPU data found from script')
+            return {'rtx3090': 0, 'v100': 0, 'h100': 0}
+
+        logger.info(f'Retrieved GPU availability: {gpus}')
+        return gpus
+
+    except subprocess.TimeoutExpired:
+        logger.error('Script execution timed out')
+        return {'rtx3090': 0, 'v100': 0, 'h100': 0}
+    except FileNotFoundError:
+        logger.error('Script /usr/local/bin/remaining-gpus-for-prio.sh not found')
+        return {'rtx3090': 0, 'v100': 0, 'h100': 0}
+    except Exception as e:
+        logger.error(f'Error getting available GPUs: {str(e)}')
+        return {'rtx3090': 0, 'v100': 0, 'h100': 0}
+
 def generate_slurm_command(priority):
     """Generate slurm command for GPU priority using admin-set priority name"""
     try:
@@ -101,7 +149,7 @@ def generate_slurm_command(priority):
             logger.warning(f'Cannot generate SLURM command: missing priority or priority_name')
             return None
 
-        # Format QOS name according to: prio-<qos_name>-<duration>d
+        # Format QOS name according to: prio-<priority_name>-<duration>d
         base_qos_name = priority.priority_name
         qos_name = f"prio-{base_qos_name}-{priority.duration_days}d"
 
@@ -199,7 +247,7 @@ def validate_username(username):
         if not usernames:
             return False
 
-        username_pattern = r'^[a-zA-Z][a-zA-Z0-9\.\-]*$'
+        username_pattern = r'^[a-zA-Z][a-zA-Z0-9\._-]*$'
 
         for user in usernames:
             if not re.match(username_pattern, user):

@@ -3,102 +3,236 @@
 {% block title %}New Priority - GPU Priority Service{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h3 class="mb-0"><i class="fas fa-calendar-plus me-2"></i>GPU Priority Request</h3>
-            </div>
-            <div class="card-body">
-                <form id="priorityForm" method="POST" action="{{ url_for('submit_priority') }}">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="bugzilla_ticket" class="form-label">
-                                <i class="fas fa-ticket-alt me-1"></i>Bugzilla Ticket Number *
-                            </label>
-                            <input type="text" class="form-control" id="bugzilla_ticket" name="bugzilla_ticket" required 
-                                   value="{{ form_data.get('bugzilla_ticket', '') }}" placeholder="e.g., BUG-12345 or 12345">
-                            <div class="form-text">Enter the related Bugzilla ticket number</div>
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-desktop me-2"></i>GPU Priority Request</h3>
+                </div>
+                <div class="card-body">
+                    <!-- GPU Availability Display -->
+                    <div id="gpu-availability" class="mb-4 p-3 bg-light rounded">
+                        <h6 class="mb-3"><i class="fas fa-chart-bar me-2"></i>GPU Availability</h6>
+                        <div id="gpu-bars" class="mb-2">
+                            <!-- GPU availability will be populated here -->
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label for="username" class="form-label">
-                                <i class="fas fa-user me-1"></i>Your Username *
-                            </label>
-                            <input type="text" class="form-control" id="username" name="username" 
-                                   value="{{ form_data.get('username', g.user.username) }}" required readonly>
+                        <div id="loading-availability" class="text-muted text-center">
+                            <i class="fas fa-spinner fa-spin me-1"></i>Loading availability...
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="additional_usernames" class="form-label">
-                            <i class="fas fa-users me-1"></i>Additional Usernames
-                        </label>
-                        <textarea class="form-control" id="additional_usernames" name="additional_usernames" 
-                                  rows="2" placeholder="username1&#10;username2">{{ form_data.get('additional_usernames', '') }}</textarea>
-                        <div class="form-text">Enter additional usernames, one per line (optional)</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="slurm_project" class="form-label">
-                            <i class="fas fa-server me-1"></i>Slurm Project *
-                        </label>
-                        <input type="text" class="form-control" id="slurm_project" name="slurm_project" required
-                               value="{{ form_data.get('slurm_project', '') }}" placeholder="your-slurm-project">
-                        <div class="form-text">Enter your Slurm project name</div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="gpu_type" class="form-label">
-                                <i class="fas fa-microchip me-1"></i>GPU Type *
-                            </label>
-                            <select class="form-select" id="gpu_type" name="gpu_type" required>
-                                <option value="">Select GPU Type</option>
-                                {% for gpu_type in gpu_types %}
-                                    <option value="{{ gpu_type }}" {% if form_data.get('gpu_type') == gpu_type %}selected{% endif %}>{{ gpu_type }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="d-flex align-items-center mb-2">
-                                <label for="gpu_count" class="form-label me-2 mb-0">
-                                    <i class="fas fa-hashtag me-1"></i>Number of GPUs *
-                                </label>
-                                <button type="button" class="btn btn-outline-info btn-sm policy-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="<strong>GPU Priority Policy</strong><br><br>In exceptional circumstances users may be granted access to a special QoS which will allow them to have priority access to a limited amount of resources.<br><br>All requests need to be justified by the PI of the project and are for a maximum of two weeks.<br><br>Requests will be grouped by event/conference and for all such policies not more than 50% of the available resources should be allocated.">
-                                    <i class="fas fa-info-circle"></i> Policy
-                                </button>
+                    <form action="{{ url_for('submit_priority') }}" method="post" data-validate>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="bugzilla_ticket" class="form-label">Bugzilla Ticket Number *</label>
+                                    <input type="text" class="form-control" id="bugzilla_ticket" name="bugzilla_ticket" 
+                                           value="{{ form_data.get('bugzilla_ticket', '') }}" required>
+                                    <div class="form-text">Enter the related Bugzilla ticket number</div>
+                                </div>
                             </div>
-                            <input type="number" class="form-control" id="gpu_count" name="gpu_count" 
-                                   min="1" required value="{{ form_data.get('gpu_count', '') }}" placeholder="1">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Your Username *</label>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           value="{{ form_data.get('username', g.user.username) }}" required readonly>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="additional_usernames" class="form-label">Additional Usernames</label>
+                                    <textarea class="form-control" id="additional_usernames" name="additional_usernames" 
+                                              rows="3" placeholder="Enter additional usernames, one per line (optional)">{{ form_data.get('additional_usernames', '') }}</textarea>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="slurm_project" class="form-label">Slurm Project *</label>
+                                    <input type="text" class="form-control" id="slurm_project" name="slurm_project" 
+                                           value="{{ form_data.get('slurm_project', '') }}" required>
+                                    <div class="form-text">Enter your Slurm project name</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="duration_days" class="form-label">
-                            <i class="fas fa-clock me-1"></i>Duration (Days) *
-                        </label>
-                        <input type="number" class="form-control" id="duration_days" name="duration_days" 
-                               min="1" max="14" required value="{{ form_data.get('duration_days', '') }}" placeholder="7">
-                        <div class="form-text">Enter duration in days (1-14, maximum 2 weeks)</div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="reason" class="form-label">
-                            <i class="fas fa-comment-alt me-1"></i>Reason for Priority *
-                        </label>
-                        <textarea class="form-control" id="reason" name="reason" rows="4" required 
-                                  placeholder="Provide a simple explanation for your GPU priority request for the admin to determine the priority name">{{ form_data.get('reason', '') }}</textarea>
-                    </div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-paper-plane me-2"></i>Submit Priority Request
-                        </button>
-                    </div>
-                </form>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="mb-3">
+                                    <label for="gpu_type" class="form-label">GPU Type *</label>
+                                    <select class="form-select" id="gpu_type" name="gpu_type" required>
+                                        <option value="">Select GPU Type</option>
+                                        {% for gpu_type in gpu_types %}
+                                        <option value="{{ gpu_type }}" 
+                                                {% if form_data.get('gpu_type') == gpu_type %}selected{% endif %}>
+                                            {{ gpu_type }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-3">
+                                    <label for="gpu_count" class="form-label">Number of GPUs *</label>
+                                    <input type="number" class="form-control" id="gpu_count" name="gpu_count" 
+                                           value="{{ form_data.get('gpu_count', '') }}" min="1" required>
+                                    <div class="form-text" id="gpu-count-help">Enter number of GPUs needed</div>
+                                    <div class="invalid-feedback" id="gpu-count-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="duration_days" class="form-label">Duration (Days) *</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="duration_days" name="duration_days" 
+                                               value="{{ form_data.get('duration_days', '') }}" min="1" max="14" required>
+                                        <button class="btn btn-outline-info btn-sm policy-btn" type="button"
+                                                data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true"
+                                                title="<strong>Idiap GPU Priority Policy:</strong><br>• Maximum duration: 14 days (2 weeks)<br>• Priorities are granted based on research needs<br>• Submit Bugzilla ticket first and get PI approval<br>• Admin approval required for all requests<br>• Resources are allocated fairly across all users">
+                                            <i class="fas fa-info-circle"></i> Policy
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Enter duration in days (1-14, maximum 2 weeks)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-4">
+                                    <label for="reason" class="form-label">Reason for Priority *</label>
+                                    <textarea class="form-control" id="reason" name="reason" rows="4" required 
+                                              placeholder="Please provide detailed reasoning for the GPU priority request...">{{ form_data.get('reason', '') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-2"></i>Submit Request
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// GPU Availability functionality
+let availableGpus = {{ available_gpus | tojson }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadGpuAvailability();
+    setupGpuValidation();
+
+    // Refresh GPU availability every 30 seconds
+    setInterval(loadGpuAvailability, 30000);
+});
+
+function loadGpuAvailability() {
+    fetch('/api/available-gpus')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error loading GPU availability:', data.error);
+                return;
+            }
+            availableGpus = data;
+            updateGpuDisplay();
+        })
+        .catch(error => {
+            console.error('Error fetching GPU availability:', error);
+        });
+}
+
+function updateGpuDisplay() {
+    const barsContainer = document.getElementById('gpu-bars');
+    const loadingDiv = document.getElementById('loading-availability');
+
+    loadingDiv.style.display = 'none';
+
+    let html = '';
+
+    Object.keys(availableGpus).forEach(gpuType => {
+        const count = availableGpus[gpuType];
+        const maxCount = Math.max(50, count); // Assume max of 50 or current count for scaling
+        const percentage = maxCount > 0 ? Math.max(5, (count / maxCount) * 100) : 5;
+
+        let barClass = 'bg-success';
+        if (count === 0) barClass = 'bg-danger';
+        else if (count < 10) barClass = 'bg-warning';
+
+        html += `
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="fw-bold">${gpuType.toUpperCase()}</small>
+                    <small class="text-muted">${count} available</small>
+                </div>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar ${barClass}" role="progressbar" 
+                         style="width: ${percentage}%" aria-valuenow="${count}" 
+                         aria-valuemin="0" aria-valuemax="${maxCount}">
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    barsContainer.innerHTML = html;
+}
+
+function setupGpuValidation() {
+    const gpuTypeSelect = document.getElementById('gpu_type');
+    const gpuCountInput = document.getElementById('gpu_count');
+    const gpuCountHelp = document.getElementById('gpu-count-help');
+    const gpuCountError = document.getElementById('gpu-count-error');
+
+    function validateGpuCount() {
+        const selectedType = gpuTypeSelect.value;
+        const requestedCount = parseInt(gpuCountInput.value) || 0;
+
+        if (!selectedType) {
+            gpuCountHelp.textContent = 'Enter number of GPUs needed';
+            gpuCountInput.classList.remove('is-invalid', 'is-valid');
+            return true;
+        }
+
+        const available = availableGpus[selectedType] || 0;
+
+        if (requestedCount > available) {
+            gpuCountHelp.textContent = '';
+            gpuCountError.textContent = `Only ${available} ${selectedType} GPUs available`;
+            gpuCountInput.classList.add('is-invalid');
+            gpuCountInput.classList.remove('is-valid');
+            return false;
+        } else if (requestedCount > 0) {
+            gpuCountHelp.textContent = `${available} ${selectedType} GPUs available`;
+            gpuCountInput.classList.add('is-valid');
+            gpuCountInput.classList.remove('is-invalid');
+            return true;
+        }
+
+        gpuCountHelp.textContent = `${available} ${selectedType} GPUs available`;
+        gpuCountInput.classList.remove('is-invalid', 'is-valid');
+        return true;
+    }
+
+    gpuTypeSelect.addEventListener('change', validateGpuCount);
+    gpuCountInput.addEventListener('input', validateGpuCount);
+
+    // Validate on form submission
+    const form = document.querySelector('form[data-validate]');
+    form.addEventListener('submit', function(e) {
+        if (!validateGpuCount()) {
+            e.preventDefault();
+        }
+    });
+}
+</script>
 {% endblock %}

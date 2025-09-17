@@ -1,11 +1,19 @@
-# GPU Priority Service - Idiap Research Institute
+# GPU Priority Service - Idiap Research Institute (Enhanced)
 
-A web service for managing GPU priorities with OIDC authentication using Authlib, PostgreSQL database, and email notifications with SLURM command generation.
+A web service for managing GPU priorities with OIDC authentication using Authlib, PostgreSQL database, and email notifications with SLURM command generation. **This enhanced version includes dynamic GPU availability display and validation.**
+
+## ✨ New Features Added
+
+- **🔍 Dynamic GPU Availability Display**: Visual representation of available GPUs above the form fields
+- **📊 Real-time GPU Monitoring**: GPU dropdown and validation based on `/usr/local/bin/remaining-gpus-for-prio.sh` script output  
+- **⚡ Live Validation**: Number of GPUs field validates against actual availability
+- **🏢 Enlarged Company Logo**: Idiap logo displayed 40% larger in footer
+- **🔄 Auto-refresh**: GPU availability refreshes every 30 seconds
 
 ## Features
 
 - 🔐 OIDC Authentication using Authlib (Keycloak, Auth0, Google, etc.)
-- 🗄️ PostgreSQL database integration  
+- 🗄️ PostgreSQL database integration
 - 📧 Email notifications for admins and users
 - 🖥️ SLURM command generation for GPU priorities (admin-only)
 - 📱 Responsive web interface with advanced search and sorting
@@ -19,6 +27,9 @@ A web service for managing GPU priorities with OIDC authentication using Authlib
 - ⏱️ Idiap priority policy enforcement
 - 📊 Enhanced priority tracking with "Valid until" display
 - 🎫 Bugzilla workflow integration
+- **🎯 Dynamic GPU Availability Integration** *(NEW)*
+- **📈 Visual GPU Usage Bars** *(NEW)*
+- **🔄 Real-time Validation** *(NEW)*
 
 ## Prerequisites
 
@@ -28,6 +39,29 @@ A web service for managing GPU priorities with OIDC authentication using Authlib
 - OIDC Provider configured
 - SMTP server access
 - at daemon for scheduled tasks
+- **GPU monitoring script at `/usr/local/bin/remaining-gpus-for-prio.sh`** *(NEW)*
+
+## GPU Monitoring Script
+
+The enhanced version requires a script at `/usr/local/bin/remaining-gpus-for-prio.sh` that outputs GPU availability in the following format:
+
+```bash
+#!/bin/bash
+# Example script - replace with your actual implementation
+echo "v100 4"
+echo "h100 0" 
+echo "rtx3090 30"
+```
+
+The script should output:
+- First column: GPU model name (lowercase)
+- Second column: Number of available GPUs
+- One line per GPU type
+
+Make sure the script is executable:
+```bash
+sudo chmod +x /usr/local/bin/remaining-gpus-for-prio.sh
+```
 
 ## Step-by-Step Deployment Guide
 
@@ -59,6 +93,7 @@ sudo -u postgres psql
 
 # In PostgreSQL shell, create database and user:
 ```
+
 ```sql
 CREATE DATABASE gpu_priorities;
 CREATE USER gpu_user WITH PASSWORD 'your_secure_password_here';
@@ -84,8 +119,9 @@ sudo mkdir -p /opt/gpu-priority-service
 sudo chown $USER:$USER /opt/gpu-priority-service
 cd /opt/gpu-priority-service
 
-# Extract the project files (if using this archive)
-# Or clone from git: git clone <your-repo-url> .
+# Extract the project files
+unzip gpu-priority-service-enhanced.zip
+cd gpu-priority-service-enhanced
 
 # Create Python virtual environment
 python3 -m venv venv
@@ -107,19 +143,24 @@ nano .env
 ```
 
 Configure the following in `.env`:
+
 - Database connection string
-- OIDC provider settings (Client ID, Secret, Discovery URL)  
+- OIDC provider settings (Client ID, Secret, Discovery URL)
 - Email SMTP settings
 - Secret key
 
 ### 5. OIDC Provider Configuration
 
 Set these in your `.env` file:
+
 - `OIDC_CLIENT_ID`: Your OIDC client ID
 - `OIDC_CLIENT_SECRET`: Your OIDC client secret
 - `OIDC_DISCOVERY_URL`: Your OIDC provider's discovery URL
 
-Make sure your OIDC provider has the correct redirect URI: `https://your-domain.com/auth/callback`
+Make sure your OIDC provider has the correct redirect URI:
+```
+https://your-domain.com/auth/callback
+```
 
 ### 6. Database Initialization
 
@@ -139,7 +180,7 @@ with app.app_context():
 ### 7. Admin User Management
 
 ```bash
-# Add an admin user
+# Add admin users
 source venv/bin/activate
 python manage_admin.py add lillo christophe.lillo@idiap.ch
 python manage_admin.py add baco guy.baconniere@idiap.ch
@@ -199,7 +240,7 @@ Group=www-data
 WorkingDirectory=/opt/gpu-priority-service
 Environment=PATH=/opt/gpu-priority-service/venv/bin
 ExecStart=/opt/gpu-priority-service/venv/bin/gunicorn --config gunicorn.conf.py app:app
-ExecReload=/bin/kill -s HUP \$MAINPID
+ExecReload=/bin/kill -s HUP $MAINPID
 Restart=always
 RestartSec=3
 StandardOutput=journal
@@ -222,24 +263,36 @@ sudo systemctl start gpu-priority.service
 sudo systemctl status gpu-priority.service
 ```
 
+## Enhanced Features Details
 
-The system generates these SLURM commands for administrators based on admin-set priority names:
+### GPU Availability Display
 
-1. **Create QOS**: `sacctmgr add qos <priority_name> GrpTRES=gres/gpu:<gpu_type>=<gpu_count> MaxWall=<duration_in_days>-0 Priority=1000`
-2. **Assign QOS to user**: `sacctmgr modify user <username> set qos+=<priority_name> where account=<slurm_project>`
-3. **Schedule cleanup**: `at` command to remove QOS after duration expires
+- **Visual Bars**: Shows available GPUs for each type with colored progress bars
+- **Auto-refresh**: Updates every 30 seconds automatically
+- **Status Colors**: 
+  - Green: Good availability (≥10 GPUs)
+  - Yellow: Limited availability (1-9 GPUs)
+  - Red: No availability (0 GPUs)
 
-### Priority Naming
-- Administrators set custom priority names when accepting requests
-- Priority names must be valid SLURM QOS names (alphanumeric, underscores, hyphens)
-- Commands are regenerated automatically when usernames are modified
+### Dynamic Validation  
+
+- **Dropdown Population**: GPU types populated from script output
+- **Count Validation**: Prevents requesting more GPUs than available
+- **Real-time Feedback**: Immediate validation as user types
+- **Fallback Handling**: Graceful degradation if script fails
+
+### API Endpoints
+
+- **`/api/available-gpus`**: Returns current GPU availability as JSON
+- Used by frontend for real-time updates
+- Secured with login requirement
 
 ## Usage
 
 1. **Access the Application**: Navigate to your domain in a web browser
 2. **Login**: Use OIDC authentication to log in
 3. **Open Bugzilla Ticket**: Create ticket and get PI approval
-4. **Create Priority**: Fill out the priority form with required details (maximum 14 days)
+4. **Create Priority**: Fill out the priority form - **now shows real-time GPU availability**
 5. **Admin Panel**: Admins can search, sort, manage status, set priority names, and add messages
 6. **Priority Acceptance**: When accepting, admin sets custom priority name for SLURM
 7. **User Management**: Admin can add/remove users from existing priorities
@@ -248,12 +301,12 @@ The system generates these SLURM commands for administrators based on admin-set 
 10. **Archive Management**: Toggle between active and archived priority views
 11. **Email Notifications**: Automatic emails sent for status changes
 
-
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Database Connection Errors**
+
    ```bash
    # Check PostgreSQL status
    sudo systemctl status postgresql
@@ -263,6 +316,7 @@ The system generates these SLURM commands for administrators based on admin-set 
    ```
 
 2. **Application Won't Start**
+
    ```bash
    # Check service logs
    sudo journalctl -u gpu-priority.service -f
@@ -273,30 +327,41 @@ The system generates these SLURM commands for administrators based on admin-set 
    python app.py
    ```
 
-3. **OIDC Authentication Issues**
+3. **GPU Script Issues** *(NEW)*
+
+   ```bash
+   # Test script manually
+   /usr/local/bin/remaining-gpus-for-prio.sh
+
+   # Check script permissions
+   ls -la /usr/local/bin/remaining-gpus-for-prio.sh
+
+   # Make executable if needed
+   sudo chmod +x /usr/local/bin/remaining-gpus-for-prio.sh
+
+   # Check application logs for script errors
+   sudo journalctl -u gpu-priority.service -f | grep -i gpu
+   ```
+
+4. **OIDC Authentication Issues**
+
    - Verify environment variables for OIDC configuration
    - Check OIDC provider settings and discovery URL
    - Ensure redirect URIs are configured correctly in your OIDC provider
 
-4. **Admin Panel Access Issues**
+5. **Admin Panel Access Issues**
+
    - Verify user is added to admin_users table
    - Check admin username matches OIDC username exactly
    - Use manage_admin.py script to add admin users
 
-5. **Duration Validation Issues**
-   - Ensure duration is between 1 and 14 days
-   - Check both client-side and server-side validation
-   - Review form input max attribute
+## New Configuration Options
 
-6. **Policy Tooltip Issues**
-   - Ensure Bootstrap tooltips are properly initialized
-   - Check for JavaScript console errors
-   - Verify HTML content in tooltip is valid
+The enhanced version includes additional configuration for GPU monitoring:
 
-7. **Form Layout Issues**
-   - Verify Bootstrap grid classes are correctly applied
-   - Test responsive behavior on different screen sizes
-   - Check CSS media queries for mobile compatibility
+- GPU script timeout: 10 seconds (hardcoded, modify `utils.py` if needed)
+- GPU refresh interval: 30 seconds (hardcoded in JavaScript)
+- Fallback GPU types: `rtx3090`, `v100`, `h100`
 
 ## Security Considerations
 
@@ -310,12 +375,77 @@ The system generates these SLURM commands for administrators based on admin-set 
 - Validate all user inputs including priority names
 - Implement proper access controls for admin functions
 - Ensure admin-only features are properly protected
+- **Secure GPU script execution**: Script runs with application permissions
 
 ## Support
 
 For issues and questions:
+
 1. Check the logs for error messages
 2. Verify configuration files
 3. Test individual components
 4. Review OIDC provider documentation
 5. Check timezone configuration if timestamps appear incorrect
+6. **Test GPU monitoring script independently**
+7. **Check network connectivity for AJAX requests**
+
+## Changes from Original
+
+### Modified Files:
+- `app.py`: Added GPU availability API endpoint and validation
+- `utils.py`: Added `get_available_gpus()` function
+- `templates/priority.html`: Enhanced with GPU availability display
+- `templates/base.html`: Enlarged company logo (40% bigger)
+- `static/css/style.css`: Added GPU availability styling
+- `static/js/custom.js`: Added GPU validation JavaScript
+
+### New Features:
+- Dynamic GPU type dropdown population
+- Visual GPU availability display with progress bars
+- Real-time form validation against available GPUs
+- Auto-refresh of GPU availability data
+- API endpoint for GPU data
+- Enhanced error handling for script failures
+- Fallback GPU types for script failures
+
+### Dependencies:
+- No new Python dependencies required
+- Uses existing Flask, subprocess, and JavaScript frameworks
+- Compatible with all existing features
+
+## About
+
+Enhanced version with dynamic GPU availability integration.
+No description, website, or topics provided.
+
+### Resources
+
+Readme
+Activity
+
+### Stars
+
+**0** stars
+
+### Watchers  
+
+**0** watching
+
+### Forks
+
+**0** forks
+
+## Releases
+
+No releases published
+
+## Packages 0
+
+No packages published
+
+## Languages
+
+- HTML 51.9%
+- Python 34.8% 
+- JavaScript 7.5%
+- CSS 5.8%
